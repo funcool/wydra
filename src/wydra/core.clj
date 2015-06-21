@@ -53,26 +53,34 @@
   ([body options]
    (msg/message body options)))
 
-;; (defn unsubscribe
-;;   ([conn topic] (unsubscribe conn topic (a/chan)))
-;;   ([conn topic ch]
-;;    (conn/unsubscribe conn topic ch))
-;;                                    ;; TODO: at this moment error handling is out of scope
-;;                                   (a/close! channel)))
-;;    channel))
-
 (defn subscribe
+  "Create a subscription to a specific topic
+  and return a core.async channel that will
+  receive the incoming messages.
+
+  Optionally you can pass your own channel
+  for make easy use of transducers."
   ([conn topic]
    (subscribe conn topic (a/chan)))
   ([conn topic ch]
    (conn/subscribe conn topic ch)))
 
 (defn publish
+  "Publish asynchronously a message into
+  a specific topic. It returns a core.async
+  channel that will be closed when the operation
+  is completed."
   [conn topic message]
   (let [message (msg/message message nil)]
     (conn/publish conn topic message)))
 
 (defn ack
+  "Function that makes a message recevied.
+
+  Is a mandatory operation for tell the system
+  that the received message is succesfully
+  received and allow receive the next message
+  (the messages are received in one by one)."
   [message]
   {:pre [(contains? message :wydra/ack)]}
   (let [ackfn (:wydra/ack message)]
