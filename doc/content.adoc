@@ -1,0 +1,131 @@
+= Wydra - A messaging library for Clojure
+Andrey Antukh, <niwi@niwi.nz>
+0.1.0
+:toc: left
+:!numbered:
+:source-highlighter: pygments
+:pygments-style: friendly
+:sectlinks:
+
+
+== Introduction
+
+TBD
+
+
+=== Rationale
+
+TBD
+
+== Project Maturity
+
+_wydra_ is considered in alpha state.
+
+Since _wydra_ is a young project there may be some API breakage.
+
+
+== Install
+
+This section covers the _wydra_ library installing process and its requirements.
+
+
+=== Requirements
+
+_wydra_ is tested with these platforms:
+
+- JDK7
+- JDK8
+
+
+=== Leiningen
+
+The simplest way to use _wydra_ in a clojure project, is by including it in the dependency
+vector on your *_project.clj_* file:
+
+[source,clojure]
+----
+[funcool/wydra "0.1.0"]
+----
+
+
+=== Gradle
+
+If you are using gradle, this is a dependency line for gradle dsl:
+
+[source,groovy]
+----
+compile "funcool:wydra:0.1.0"
+----
+
+
+=== Get the Code
+
+_wydra_ is open source and you can found the source on link:https://github.com/funcool/wydra[github].
+
+You can clone the public repository with this command:
+
+[source,text]
+----
+git clone https://github.com/funcool/wydra
+----
+
+== User Guilde
+
+TBD
+
+
+== FAQ
+
+TBD
+
+== How to Contribute?
+
+=== Philosophy
+
+Five most important rules:
+
+- Beautiful is better than ugly.
+- Explicit is better than implicit.
+- Simple is better than complex.
+- Complex is better than complicated.
+- Readability counts.
+
+All contributions to _wydra_ should keep these important rules in mind.
+
+
+=== Procedure
+
+**wydra** unlike Clojure and other Clojure contrib libs, does not have many
+restrictions for contributions. Just open a issue or pull request.
+
+
+=== License
+
+_wydra_ is licensed under BSD (2-Clause) license:
+
+----
+Copyright (c) 2015 Andrey Antukh <niwi@niwi.nz>
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+----
