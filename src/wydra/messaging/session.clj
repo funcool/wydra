@@ -22,27 +22,12 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.impl.connection
-  (:import java.net.URI))
+(ns wydra.messaging.session)
 
-(defprotocol ISession
+(defprotocol ITopicSession
   (subscribe [_ topic ch] "Subscribe to concrete topic.")
-  ;; (unsubscribe [_ topic] "Unsubscribe from concrete topic.")
   (publish [_ topic message] "Publish a message in a concrete topic."))
 
-(defmulti connect
-  "A polymorphic that creates a connection."
-  (fn [^URI uri options]
-    (keyword (.getScheme uri))))
-
-(defprotocol IURIFactory
-  (->uri [_] "Cast type to valid uri."))
-
-(extend-protocol IURIFactory
-  java.lang.String
-  (->uri [s]
-    (java.net.URI/create s))
-
-  java.net.URI
-  (->uri [u]
-    u))
+(defprotocol IQueueSession
+  (consume [_ queue ch] "Consume messages from the queue.")
+  (produce [_ queue message] "Push a new message to the queue."))

@@ -22,32 +22,45 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.util
-  (:require [clojure.walk :refer [stringify-keys keywordize-keys]]
-            [cuerdas.core :as str])
-  (:import java.net.URLDecoder))
+(ns wydra.messaging.message
+  "A message abstraction.")
 
-(defn querystring->map
-  [^String querystring]
-  (persistent!
-   (reduce (fn [acc item]
-             (let [[key value] (str/split item "=")
-                   [key value] [(URLDecoder/decode key)
-                                (URLDecoder/decode value)]]
-               (assoc! acc key value)))
-           (transient {})
-           (str/split querystring "&"))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Protocols
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn str->bytes
-  "Convert string to java bytes array"
-  ([^String s]
-   (str->bytes s "UTF-8"))
-  ([^String s, ^String encoding]
-   (.getBytes s encoding)))
+(defprotocol IMessageFactory
+  (message [_ headers] "Create a new message instance."))
 
-(defn bytes->str
-  "Convert octets to String."
-  ([^bytes data]
-   (bytes->str data "UTF-8"))
-  ([^bytes data, ^String encoding]
-   (String. data encoding)))
+(defprotocol IMessage
+  (get-body [_] "Get the message body.")
+  (get-options [_] "Get the message optional headers."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Type
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrecord Message [body options]
+  IMessage
+  (get-body [_] body)
+  (get-options [_] options))
+
+(alter-meta! #'->Message assoc :private true)
+(alter-meta! #'map->Message assoc :private true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Protocol & Implementation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(extend-protocol IMessageFactory
+  java.lang.String
+  (message [s o]
+    (Message. s o))
+
+  clojure.lang.IPersistentMap
+  (message [m o]
+    (Message. m o))
+
+  Message
+  (message [m _]
+    m))

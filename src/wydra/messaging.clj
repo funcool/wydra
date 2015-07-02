@@ -22,12 +22,13 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.core
-  "A messaging library for Clojure"
+(ns wydra.messaging
+  "A high level messaging abstraction."
   (:require [clojure.core.async :as a]
-            [wydra.impl.connection :as conn]
-            [wydra.impl.message :as msg]
-            [wydra.impl.backends.rabbitmq]))
+            [wydra.messaging.connection :as conn]
+            [wydra.messaging.session :as sess]
+            [wydra.messaging.message :as msg]
+            [wydra.messaging.backends.rabbitmq]))
 
 (defn connect
   "Given a uri and optionally a options hash-map,
@@ -58,21 +59,44 @@
   and return a core.async channel that will
   receive the incoming messages.
 
-  Optionally you can pass your own channel
-  for make easy use of transducers."
+  Optionally this function accepts an third argument
+  for arbitrary, maybe backend specific options
+  hash-map. A own channel can be passed with `:chan`
+  option for make easy use of transducers."
   ([conn topic]
-   (subscribe conn topic (a/chan)))
-  ([conn topic ch]
-   (conn/subscribe conn topic ch)))
+   (subscribe conn topic {}))
+  ([conn topic options]
+   (sess/subscribe conn topic options)))
 
 (defn publish
-  "Publish asynchronously a message into
-  a specific topic. It returns a core.async
-  channel that will be closed when the operation
-  is completed."
+  "Publish asynchronously a message into a specific
+  topic. It returns a core.async channel that will be
+  closed when the operation is completed."
   [conn topic message]
   (let [message (msg/message message nil)]
-    (conn/publish conn topic message)))
+    (sess/publish conn topic message)))
+
+(defn consume
+  "Starts a consumer for a specific queue and return a
+  core.async hcannel that will receive the consumed
+  messages.
+
+  Optionally this function accepts an third argument
+  for arbitrary, maybe backend specific options
+  hash-map. A own channel can be passed with `:chan`
+  option for make easy use of transducers."
+  ([conn queue]
+   (consume conn queue {}))
+  ([conn queue options]
+   (sess/consume conn queue options)))
+
+(defn produce
+  "Publish asynchronously a message into a specific
+  queue. It returns a core.async channel that will be
+  closed when the operation is completed."
+  [conn queue message]
+  (let [message (msg/message message nil)]
+    (sess/produce conn queue message)))
 
 (defn ack
   "Function that makes a message recevied.

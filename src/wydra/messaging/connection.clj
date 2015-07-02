@@ -22,32 +22,22 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.util
-  (:require [clojure.walk :refer [stringify-keys keywordize-keys]]
-            [cuerdas.core :as str])
-  (:import java.net.URLDecoder))
+(ns wydra.messaging.connection
+  (:import java.net.URI))
 
-(defn querystring->map
-  [^String querystring]
-  (persistent!
-   (reduce (fn [acc item]
-             (let [[key value] (str/split item "=")
-                   [key value] [(URLDecoder/decode key)
-                                (URLDecoder/decode value)]]
-               (assoc! acc key value)))
-           (transient {})
-           (str/split querystring "&"))))
+(defmulti connect
+  "A polymorphic that creates a connection."
+  (fn [^URI uri options]
+    (keyword (.getScheme uri))))
 
-(defn str->bytes
-  "Convert string to java bytes array"
-  ([^String s]
-   (str->bytes s "UTF-8"))
-  ([^String s, ^String encoding]
-   (.getBytes s encoding)))
+(defprotocol IURIFactory
+  (->uri [_] "Cast type to valid uri."))
 
-(defn bytes->str
-  "Convert octets to String."
-  ([^bytes data]
-   (bytes->str data "UTF-8"))
-  ([^bytes data, ^String encoding]
-   (String. data encoding)))
+(extend-protocol IURIFactory
+  java.lang.String
+  (->uri [s]
+    (java.net.URI/create s))
+
+  java.net.URI
+  (->uri [u]
+    u))
