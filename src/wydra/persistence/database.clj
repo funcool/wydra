@@ -22,24 +22,22 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.persistence
-  "Event source based persistence."
-  (:require [wydra.persistence.database :as db]
+(ns wydra.persistence.database
+  (:import java.net.URI))
 
-(defn open
-  "Given a uri and optionally a options hash-map,
-  create a transactor.
+(defmulti open
+  "A polymorphic that creates a transactor."
+  (fn [^URI uri options]
+    (keyword (.getScheme uri))))
 
-  The backend used for the connection is resolved
-  using the uri scheme and backend options are parsed
-  from the query params.
+(defprotocol IURIFactory
+  (->uri [_] "Cast type to valid uri."))
 
-  This function accepts additionally a options map
-  thar serves for configure serializer, compression
-  and other similar things that are not related
-  to the connection parameters."
-  ([uri]
-   (db/open (db/->uri uri) {}))
-  ([uri options]
-   (db/open (db/->uri uri) options)))
+(extend-protocol IURIFactory
+  java.lang.String
+  (->uri [s]
+    (java.net.URI/create s))
 
+  java.net.URI
+  (->uri [u]
+    u))

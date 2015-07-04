@@ -9,6 +9,8 @@
                  [funcool/zaek "0.1.0-SNAPSHOT"]
                  [funcool/cuerdas "0.5.0"]
                  [funcool/futura "0.3.0"]
+                 [funcool/suricatta "0.3.1"]
+                 [hikari-cp "1.2.4"]
                  [com.cognitect/transit-clj "0.8.275"]
                  [cheshire "5.5.0"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* true}}})
