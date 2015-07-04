@@ -3,7 +3,7 @@
   :url "https://github.com/funcool/wydra"
   :license {:name "BSD (2-Clause)"
             :url "http://opensource.org/licenses/BSD-2-Clause"}
-  :javac-options ["-target" "1.7" "-source" "1.7" "-Xlint:-options"]
+  :javac-options ["-target" "1.8" "-source" "1.8" "-Xlint:-options"]
   :dependencies [[org.clojure/clojure "1.7.0" :scope "provided"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [funcool/zaek "0.1.0-SNAPSHOT"]
