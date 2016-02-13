@@ -22,20 +22,18 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.messaging.backends.rabbitmq
+(ns wydra.backends.rabbitmq
   "A messaging library for Clojure"
   (:require [clojure.walk :refer [stringify-keys keywordize-keys]]
             [clojure.core.async :as a]
             [zaek.core :as zk]
-            [futura.executor :as exec]
-            [wydra.messaging.serializers :as serz]
-            [wydra.messaging.session :as sess]
-            [wydra.messaging.connection :as conn]
-            [wydra.messaging.message :as msg]
+            [wydra.executor :as exec]
+            [wydra.serializers :as serz]
+            [wydra.session :as sess]
+            [wydra.connection :as conn]
+            [wydra.message :as msg]
             [wydra.util :as util])
-  (:import java.net.URI
-           java.util.concurrent.ForkJoinPool
-           java.util.concurrent.Executor))
+  (:import java.net.URI))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Types
@@ -53,17 +51,17 @@
     (.close ^com.rabbitmq.client.Connection connection))
 
   sess/ITopicSession
-  (subscribe [this topic ch]
+  (-subscribe [this topic ch]
     (subscribe this topic ch))
 
-  (publish [this topic message]
+  (-publish [this topic message]
     (publish this topic message))
 
   sess/IQueueSession
-  (consume [this queue ch]
+  (-consume [this queue ch]
     (consume this queue ch))
 
-  (produce [this queue message]
+  (-produce [this queue message]
     (produce this queue message)))
 
 (alter-meta! #'->Connection assoc :private true)
@@ -88,7 +86,7 @@
         (assoc! props :mode 1)))
     (persistent! props)))
 
-(defmethod conn/connect :rabbitmq
+(defmethod conn/-connect :rabbitmq
   [^URI uri {:keys [serializer] :or {serializer serz/*default*}}]
   (let [params (parse-params uri)
         host (.getHost uri)
@@ -113,8 +111,8 @@
                                    data (serz/decode serializer data)
                                    message (-> (msg/message data props)
                                                (assoc :wydra/ack #(zk/ack channel tag)))]
-                               ;; Blocking call is performed because the rabbitmq has
-                               ;; blocking api.
+                               ;; Blocking call is performed because the rabbitmq
+                               ;; has blocking api.
                                (let [res (a/>!! ch message)]
                                  (when-not (true? res)
                                    (a/close! lock))))))]

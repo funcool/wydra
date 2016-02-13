@@ -4,14 +4,14 @@
   :license {:name "BSD (2-Clause)"
             :url "http://opensource.org/licenses/BSD-2-Clause"}
   :javac-options ["-target" "1.8" "-source" "1.8" "-Xlint:-options"]
-  :dependencies [[org.clojure/clojure "1.7.0" :scope "provided"]
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+  :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
+                 [org.clojure/core.async "0.2.374"]
                  [funcool/zaek "0.1.0-SNAPSHOT"]
-                 [funcool/cuerdas "0.5.0"]
-                 [funcool/futura "0.3.0"]
-                 [funcool/suricatta "0.3.1"]
-                 [hikari-cp "1.2.4"]
-                 [com.cognitect/transit-clj "0.8.275"]
+                 [funcool/cuerdas "0.7.1"]
+                 [funcool/promesa "0.8.0"]
+                 [com.cognitect/transit-clj "0.8.285"]
                  [cheshire "5.5.0"]]
-  :profiles {:dev {:global-vars {*warn-on-reflection* true}}})
+  :profiles {:dev {:global-vars {*warn-on-reflection* true}}}
+  :plugins [[lein-ancient "0.6.7"]])
+
 

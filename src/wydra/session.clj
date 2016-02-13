@@ -22,12 +22,12 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.messaging.session)
+(ns wydra.session)
 
 (defprotocol ITopicSession
-  (subscribe [_ topic ch] "Subscribe to concrete topic.")
-  (publish [_ topic message] "Publish a message in a concrete topic."))
+  (-subscribe [_ topic ch] "Subscribe to concrete topic.")
+  (-publish [_ topic message] "Publish a message in a concrete topic."))
 
 (defprotocol IQueueSession
-  (consume [_ queue ch] "Consume messages from the queue.")
-  (produce [_ queue message] "Push a new message to the queue."))
+  (-consume [_ queue ch] "Consume messages from the queue.")
+  (-produce [_ queue message] "Push a new message to the queue."))

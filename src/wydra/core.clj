@@ -22,13 +22,13 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.messaging
+(ns wydra.core
   "A high level messaging abstraction."
   (:require [clojure.core.async :as a]
-            [wydra.messaging.connection :as conn]
-            [wydra.messaging.session :as sess]
-            [wydra.messaging.message :as msg]
-            [wydra.messaging.backends.rabbitmq]))
+            [wydra.connection :as conn]
+            [wydra.session :as sess]
+            [wydra.message :as msg]
+            [wydra.backends.rabbitmq]))
 
 (defn connect
   "Given a uri and optionally a options hash-map,
@@ -43,16 +43,16 @@
   and other similar things that are not related
   to the connection parameters."
   ([uri]
-   (conn/connect (conn/->uri uri) {}))
+   (conn/-connect (conn/->uri uri) {}))
   ([uri options]
-   (conn/connect (conn/->uri uri) options)))
+   (conn/-connect (conn/->uri uri) options)))
 
 (defn message
   "A message instace constructor."
   ([body]
-   (msg/message body {}))
+   (msg/-message body {}))
   ([body options]
-   (msg/message body options)))
+   (msg/-message body options)))
 
 (defn subscribe
   "Create a subscription to a specific topic
@@ -66,15 +66,15 @@
   ([conn topic]
    (subscribe conn topic {}))
   ([conn topic options]
-   (sess/subscribe conn topic options)))
+   (sess/-subscribe conn topic options)))
 
 (defn publish
   "Publish asynchronously a message into a specific
   topic. It returns a core.async channel that will be
   closed when the operation is completed."
   [conn topic message]
-  (let [message (msg/message message nil)]
-    (sess/publish conn topic message)))
+  (let [message (msg/-message message nil)]
+    (sess/-publish conn topic message)))
 
 (defn consume
   "Starts a consumer for a specific queue and return a
@@ -88,15 +88,15 @@
   ([conn queue]
    (consume conn queue {}))
   ([conn queue options]
-   (sess/consume conn queue options)))
+   (sess/-consume conn queue options)))
 
 (defn produce
   "Publish asynchronously a message into a specific
   queue. It returns a core.async channel that will be
   closed when the operation is completed."
   [conn queue message]
-  (let [message (msg/message message nil)]
-    (sess/produce conn queue message)))
+  (let [message (msg/-message message nil)]
+    (sess/-produce conn queue message)))
 
 (defn ack
   "Function that makes a message recevied.

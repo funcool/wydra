@@ -22,22 +22,45 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.messaging.connection
-  (:import java.net.URI))
+(ns wydra.message
+  "A message abstraction.")
 
-(defmulti connect
-  "A polymorphic that creates a connection."
-  (fn [^URI uri options]
-    (keyword (.getScheme uri))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Protocols
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defprotocol IURIFactory
-  (->uri [_] "Cast type to valid uri."))
+(defprotocol IMessageFactory
+  (-message [_ headers] "Create a new message instance."))
 
-(extend-protocol IURIFactory
+(defprotocol IMessage
+  (-get-body [_] "Get the message body.")
+  (-get-options [_] "Get the message optional headers."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Type
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrecord Message [body options]
+  IMessage
+  (-get-body [_] body)
+  (-get-options [_] options))
+
+(alter-meta! #'->Message assoc :private true)
+(alter-meta! #'map->Message assoc :private true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Protocol & Implementation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(extend-protocol IMessageFactory
   java.lang.String
-  (->uri [s]
-    (java.net.URI/create s))
+  (-message [s o]
+    (Message. s o))
 
-  java.net.URI
-  (->uri [u]
-    u))
+  clojure.lang.IPersistentMap
+  (-message [m o]
+    (Message. m o))
+
+  Message
+  (-message [m _]
+    m))

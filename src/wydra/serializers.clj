@@ -22,7 +22,7 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.messaging.serializers
+(ns wydra.serializers
   "A serializers abstraction for messaging."
   (:require [clojure.edn :as edn]
             [cheshire.core :as json]

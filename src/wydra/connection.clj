@@ -22,11 +22,11 @@
 ;; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns wydra.persistence.database
+(ns wydra.connection
   (:import java.net.URI))
 
-(defmulti open
-  "A polymorphic that creates a transactor."
+(defmulti -connect
+  "A polymorphic that creates a connection."
   (fn [^URI uri options]
     (keyword (.getScheme uri))))
 
