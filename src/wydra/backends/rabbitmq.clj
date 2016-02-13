@@ -78,13 +78,13 @@
 
 (defn- headers->props
   [{:keys [persistent] :as headers}]
-  (let [options (select-keys headers [:mode :userid :appid :reply-to :priority :type :content-type])
-        props (transient options)]
-    (when-not (nil? persistent)
+  (let [options (select-keys headers [:mode :userid :appid :reply-to
+                                      :priority :type :content-type])]
+    (if-not (nil? persistent)
       (if persistent
-        (assoc! props :mode 2)
-        (assoc! props :mode 1)))
-    (persistent! props)))
+        (assoc options :mode 2)
+        (assoc options :mode 1))
+      options)))
 
 (defmethod conn/-connect :rabbitmq
   [^URI uri {:keys [serializer] :or {serializer serz/*default*}}]
@@ -109,7 +109,7 @@
                            (fn [tag env props data]
                              (let [serializer (:serializer conn)
                                    data (serz/decode serializer data)
-                                   message (-> (msg/message data props)
+                                   message (-> (msg/-message data props)
                                                (assoc :wydra/ack #(zk/ack channel tag)))]
                                ;; Blocking call is performed because the rabbitmq
                                ;; has blocking api.
@@ -124,8 +124,8 @@
   [conn topic message]
   (let [serializer (:serializer conn)
         channel (:channel conn)
-        message-body (msg/get-body message)
-        message-opts (msg/get-options message)
+        message-body (msg/-get-body message)
+        message-opts (msg/-get-options message)
         content-type (serz/get-content-type serializer)
         message (serz/encode serializer message-body)
         props (headers->props (assoc message-opts :content-type content-type))
@@ -148,7 +148,7 @@
                            (fn [tag env props data]
                              (let [serializer (:serializer conn)
                                    data (serz/decode serializer data)
-                                   message (-> (msg/message data props)
+                                   message (-> (msg/-message data props)
                                                (assoc :wydra/ack #(zk/ack channel tag)))]
                                ;; Blocking call is performed because the rabbitmq has
                                ;; blocking api.
@@ -163,8 +163,8 @@
   [conn queue message]
   (let [serializer (:serializer conn)
         channel (:channel conn)
-        message-body (msg/get-body message)
-        message-opts (msg/get-options message)
+        message-body (msg/-get-body message)
+        message-opts (msg/-get-options message)
         content-type (serz/get-content-type serializer)
         message (serz/encode serializer message-body)
         props (headers->props (assoc message-opts :content-type content-type))

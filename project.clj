@@ -8,7 +8,7 @@
                  [org.clojure/core.async "0.2.374"]
                  [funcool/zaek "0.1.0-SNAPSHOT"]
                  [funcool/cuerdas "0.7.1"]
-                 [funcool/promesa "0.8.0"]
+                 [funcool/promesa "0.8.1"]
                  [com.cognitect/transit-clj "0.8.285"]
                  [cheshire "5.5.0"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* true}}}

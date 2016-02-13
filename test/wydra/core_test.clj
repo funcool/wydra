@@ -1,7 +1,7 @@
 (ns wydra.core-test
   (:require [clojure.test :refer :all]
             [clojure.core.async :as a]
-            [wydra.messaging :as wym]))
+            [wydra.core :as wym]))
 
 (deftest connection-creation
   (let [p1 (promise)
