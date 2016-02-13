@@ -33,17 +33,17 @@
   (-message [_ headers] "Create a new message instance."))
 
 (defprotocol IMessage
-  (-get-body [_] "Get the message body.")
-  (-get-options [_] "Get the message optional headers."))
+  (-body [_] "Get the message body.")
+  (-headers [_] "Get the message optional headers."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Type
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrecord Message [body options]
+(defrecord Message [body headers]
   IMessage
-  (-get-body [_] body)
-  (-get-options [_] options))
+  (-body [_] body)
+  (-headers [_] headers))
 
 (alter-meta! #'->Message assoc :private true)
 (alter-meta! #'map->Message assoc :private true)

@@ -51,15 +51,15 @@
     (.close ^com.rabbitmq.client.Connection connection))
 
   sess/ITopicSession
-  (-subscribe [this topic ch]
-    (subscribe this topic ch))
+  (-subscribe [this topic options]
+    (subscribe this topic options))
 
   (-publish [this topic message]
     (publish this topic message))
 
   sess/IQueueSession
-  (-consume [this queue ch]
-    (consume this queue ch))
+  (-consume [this queue options]
+    (consume this queue options))
 
   (-produce [this queue message]
     (produce this queue message)))
@@ -87,14 +87,15 @@
       options)))
 
 (defmethod conn/-connect :rabbitmq
-  [^URI uri {:keys [serializer] :or {serializer serz/*default*}}]
-  (let [params (parse-params uri)
-        host (.getHost uri)
+  [^URI uri {:keys [serializer] :or {serializer serz/*default*} :as options}]
+  (let [host (.getHost uri)
         port (.getPort uri)
-        connection (zk/connect (merge params
-                                      (when host {:host host})
-                                      (when port {:port port})))
-        channel (zk/channel connection)]
+        options (merge (parse-params uri)
+                       options
+                       (when host {:host host})
+                       (when port {:port port}))
+        connection (zk/connect options)
+        channel (zk/channel connection options)]
     (Connection. connection channel serializer (atom {}))))
 
 (defn- subscribe
@@ -102,8 +103,8 @@
   (let [channel (:channel conn)
         defaults {:exclusive true :autodelete true}
         ch (or (:chan options) (a/chan))
-        queue (zk/declare-queue! channel "" (merge defaults options))]
-    (zk/bind-queue! channel queue "amq.topic" topic)
+        queue (zk/declare-queue channel "" (merge defaults options))]
+    (zk/bind-queue channel queue "amq.topic" topic)
     (let [lock (a/chan)
           stag (zk/consume channel queue
                            (fn [tag env props data]
@@ -116,16 +117,15 @@
                                (let [res (a/>!! ch message)]
                                  (when-not (true? res)
                                    (a/close! lock))))))]
-      (a/take! lock (fn [_]
-                      (zk/cancel channel stag)))
+      (a/take! lock #(zk/cancel channel stag))
       ch)))
 
 (defn- publish
   [conn topic message]
   (let [serializer (:serializer conn)
         channel (:channel conn)
-        message-body (msg/-get-body message)
-        message-opts (msg/-get-options message)
+        message-body (msg/-body message)
+        message-opts (msg/-headers message)
         content-type (serz/get-content-type serializer)
         message (serz/encode serializer message-body)
         props (headers->props (assoc message-opts :content-type content-type))
@@ -140,10 +140,11 @@
     ch))
 
 (defn- consume
-  [conn queue ch]
+  [conn queue options]
   (let [channel (:channel conn)
+        ch (or (:chan options) (a/chan))
         lock (a/chan)]
-    (zk/declare-queue! channel queue {:persistent true :ttl 3600})
+    (zk/declare-queue channel queue)
     (let [stag (zk/consume channel queue
                            (fn [tag env props data]
                              (let [serializer (:serializer conn)
@@ -155,16 +156,15 @@
                                (let [res (a/>!! ch message)]
                                  (when-not (true? res)
                                    (a/close! lock))))))]
-      (a/take! lock (fn [_]
-                      (zk/cancel channel stag)))
+      (a/take! lock #(zk/cancel channel stag))
       ch)))
 
 (defn- produce
   [conn queue message]
   (let [serializer (:serializer conn)
         channel (:channel conn)
-        message-body (msg/-get-body message)
-        message-opts (msg/-get-options message)
+        message-body (msg/-body message)
+        message-opts (msg/-headers message)
         content-type (serz/get-content-type serializer)
         message (serz/encode serializer message-body)
         props (headers->props (assoc message-opts :content-type content-type))

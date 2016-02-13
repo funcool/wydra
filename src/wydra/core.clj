@@ -51,8 +51,8 @@
   "A message instace constructor."
   ([body]
    (msg/-message body {}))
-  ([body options]
-   (msg/-message body options)))
+  ([body headers]
+   (msg/-message body headers)))
 
 (defn subscribe
   "Create a subscription to a specific topic
