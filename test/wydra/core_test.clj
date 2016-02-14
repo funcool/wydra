@@ -37,16 +37,69 @@
 
 
 (deftest rpc-test
-  (let [conn1 (wym/connect "rabbitmq://localhost/")
-        conn2 (wym/connect "rabbitmq://localhost/")
+  (let [conn1 (wym/connect "rabbitmq://localhost/" )
+        conn2 (wym/connect "rabbitmq://localhost/" {:prefetch 4})
         client (rpc/client conn1 {:queue "tasks"})
         server (rpc/server conn2)]
     (println client)
     (println server)
     (rpc/listen! server "tasks"
-                 (fn [request] {:foo "foo"}))
+                 (fn [request] {:response (:require request)}))
 
-    (let [response (a/<!! (rpc/ask client {:baz "baz"}))]
-      (println response))))
+    (dotimes [i 100000]
+      (let [request {:require i}]
+        (println "")
+        (println "=> sending request" request)
+        (let [[type response] (a/<!! (rpc/ask client request))]
+          (case type
+            :rpc/response
+            (println "<= received response" response)
+
+            :rpc/timeout
+            (println "<= received timeout")))))
+
+    (Thread/sleep 100000)))
+
+(deftest rpc-benchmark
+  (let [conn1 (wym/connect "rabbitmq://localhost/")
+        conn2 (wym/connect "rabbitmq://localhost/")
+        client (rpc/client conn1 {:queue "tasks"})
+        server (rpc/server conn2)]
+    (rpc/listen! server "tasks"
+                 (fn [request] {:response (:require request)}))
+
+    (let [timeouts (volatile! 0)
+          min-time (volatile! 999999999)
+          max-time (volatile! 0)
+          total-time (volatile! 0)
+          tasks-a (agent nil)
+          num-ops 10000]
+      (dotimes [i num-ops]
+        ;; (Thread/sleep 10)
+        (let [request {:require i}
+              start-t (System/nanoTime)
+              [type response] (a/<!! (rpc/ask client request))]
+          (case type
+            :rpc/response
+            (let [end-t (System/nanoTime)
+                  res-t (- end-t start-t)]
+              (send tasks-a (fn [_]
+                              (vswap! total-time + res-t)
+                              (when (< res-t @min-time)
+                                (vreset! min-time res-t))
+                              (when (> res-t @max-time)
+                                (println "increasing to" res-t)
+                                (vreset! max-time res-t)))))
+
+            :rpc/timeout
+            (send tasks-a (fn [_]
+                            (vswap! timeouts inc))))))
+
+      (shutdown-agents)
+      (Thread/sleep 1000)
+      (println "Timeouts:" @timeouts)
+      (println "Latency min:" (/ @min-time 1e6) "ms")
+      (println "Latency max:" (/ @max-time 1e6) "ms")
+      (println "Latency avg:" (/ (/ @total-time 1e6) num-ops) "ms"))))
 
 

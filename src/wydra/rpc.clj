@@ -26,42 +26,64 @@
   (:require [clojure.core.async :as a]
             [clj-uuid :as uuid]
             [wydra.message :as msg]
-            [wydra.core :as wyd]))
+            [wydra.core :as wyd])
+  (:import java.util.concurrent.TimeUnit
+           java.util.concurrent.Executors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Client
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def ^:no-doc
+  +scheduler+ (Executors/newScheduledThreadPool 1))
+
+(defn timeout
+  [ms]
+  (let [ch (a/chan)]
+    (.schedule +scheduler+ #(a/close! ch) ms TimeUnit/MILLISECONDS)
+    ch))
+
 (defprotocol IClient
   (-ask [_ payload options]))
 
-(deftype Client [conn id pub queue]
+(deftype Client [conn id queue state]
   java.lang.AutoCloseable
   (close [_]
     (.close conn))
 
   IClient
   (-ask [_ payload options]
-    (let [{:keys [timeout] :or {timeout 6000}} options
-          msgid (uuid/v1)
+    (let [msgid (uuid/v4)
           body {:payload payload
                 :type :rpc/request
                 :id msgid
                 :reply-to (str id)}
           msg (wyd/message body)
-          chs (a/chan (a/dropping-buffer 1))
-          cht (a/timeout timeout)]
-      (a/sub pub msgid chs true)
+          chs (a/chan 1)]
+      (.put state msgid chs)
       (a/go
         (a/<! (wyd/produce conn queue msg))
-        (let [[val port] (a/alts! [chs cht])]
+        (let [cht (timeout (:timeout options 6000))
+              [val port] (a/alts! [chs cht])]
           (a/close! chs)
           (a/close! cht)
+          (.remove state msgid)
           (if (identical? port cht)
             (vector :rpc/timeout nil)
             (let [response (get-in val [:body :payload])]
-              (wyd/ack val)
               (vector :rpc/response response))))))))
+
+(defn client-rcv-loop
+  [conn id state]
+  (let [source (wyd/consume conn (str id) {:autoack true})]
+    (a/go-loop []
+      (when-let [{:keys [body] :as msg} (a/<! source)]
+        (let [msgid (:id body)
+              ch (.remove state msgid)]
+          (when-not (nil? ch)
+            (a/offer! ch msg))
+          (recur))))))
+
 
 (defn client
   "Create a new server instance."
@@ -71,10 +93,10 @@
      (throw (ex-info "No queue option is provided." {})))
    (let [pub-ch (a/chan 256)
          pub (a/pub pub-ch (comp :id :body))
-         id (uuid/v4)
-         source (wyd/consume conn (str id))]
-     (a/pipe source pub-ch true)
-     (Client. conn id pub queue))))
+         state (java.util.concurrent.ConcurrentHashMap.)
+         id (uuid/v4)]
+     (client-rcv-loop conn id state)
+     (Client. conn id queue state))))
 
 (defn ask
   "Perform the ask operation."
@@ -118,9 +140,7 @@
     (let [{:keys [id reply-to]} (msg/-body msg)
           body {:type :rpc/response :id id :payload response}
           message (wyd/message body)]
-      (a/go
-        (a/<! (wyd/produce conn reply-to message))
-        (wyd/ack msg))))
+      (wyd/produce conn reply-to message)))
 
   java.lang.Exception
   (-handle-response [err conn msg]
@@ -144,11 +164,12 @@
   IServer
   (-listen [_ queue handler]
     (let [ss (wyd/consume conn queue)
-          ch (a/chan (a/sliding-buffer 6))]
+          ch (a/chan)]
       (a/go-loop []
         (if-let [msg (a/<! ss)]
           (do
             (a/<! (handle-message conn handler msg))
+            (wyd/ack msg)
             (recur))
           (a/close! ch)))
       ch)))

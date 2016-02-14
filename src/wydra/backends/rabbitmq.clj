@@ -139,23 +139,32 @@
                        (a/close! ch))))
     ch))
 
+(def ^:const ^:private +consume-defaults+
+  {:durable false
+   :messagettl 600
+   :exclusive false
+   :autodelete true})
+
 (defn- consume
   [conn queue options]
   (let [channel (:channel conn)
         ch (or (:chan options) (a/chan))
-        lock (a/chan)]
-    (zk/declare-queue channel queue)
-    (let [stag (zk/consume channel queue
-                           (fn [tag env props data]
-                             (let [serializer (:serializer conn)
-                                   data (serz/decode serializer data)
-                                   message (-> (msg/-message data props)
-                                               (assoc :wydra/ack #(zk/ack channel tag)))]
-                               ;; Blocking call is performed because the rabbitmq has
-                               ;; blocking api.
-                               (let [res (a/>!! ch message)]
-                                 (when-not (true? res)
-                                   (a/close! lock))))))]
+        lock (a/chan)
+        options (merge +consume-defaults+ options)
+        consumer (fn [tag env props data]
+                   (let [serializer (:serializer conn)
+                         data (serz/decode serializer data)
+                         message (-> (msg/-message data props)
+                                     (assoc :wydra/ack #(zk/ack channel tag)))]
+                     ;; Blocking call is performed because the rabbitmq has
+                     ;; blocking api.
+                     (let [res (a/>!! ch message)]
+                       (when-not (true? res)
+                         (a/close! lock)))))]
+
+
+    (zk/declare-queue channel queue options)
+    (let [stag (zk/consume channel queue consumer options)]
       (a/take! lock #(zk/cancel channel stag))
       ch)))
 
