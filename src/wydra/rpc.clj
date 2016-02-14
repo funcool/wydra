@@ -57,9 +57,11 @@
         (let [[val port] (a/alts! [chs cht])]
           (a/close! chs)
           (a/close! cht)
-          (condp = port
-            cht [:rpc/timeout nil]
-            chs [:rpc/response (get-in val [:body :payload])]))))))
+          (if (identical? port cht)
+            (vector :rpc/timeout nil)
+            (let [response (get-in val [:body :payload])]
+              (wyd/ack val)
+              (vector :rpc/response response))))))))
 
 (defn client
   "Create a new server instance."
