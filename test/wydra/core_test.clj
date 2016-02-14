@@ -40,10 +40,9 @@
   (let [conn1 (wym/connect "rabbitmq://localhost/" )
         conn2 (wym/connect "rabbitmq://localhost/" {:prefetch 4})
         client (rpc/client conn1 {:queue "tasks"})
-        server (rpc/server conn2)]
-    (rpc/listen! server "tasks"
-                 (fn [request] {:response (:require request)}))
-
+        server (rpc/server conn2 {:queue "tasks"
+                                  :handler (fn [request]
+                                             {:response (:require request)})})]
     (let [request {:require 1}
           [type response] (a/<!! (rpc/ask client request))]
       (is (= type :rpc/response))

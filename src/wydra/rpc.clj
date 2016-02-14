@@ -109,9 +109,6 @@
 ;; Server
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defprotocol IServer
-  (-listen [_ queue handler]))
-
 (defprotocol IHandlerResponse
   (-handle-response [_ conn msg]))
 
@@ -156,31 +153,22 @@
       (catch Exception e
         (-handle-response e conn msg)))))
 
-(deftype Server [conn options]
+(deftype Server [conn options ch]
   java.lang.AutoCloseable
-  (close [_]
-    (.close conn))
-
-  IServer
-  (-listen [_ queue handler]
-    (let [ss (wyd/consume conn queue)
-          ch (a/chan)]
-      (a/go-loop []
-        (if-let [msg (a/<! ss)]
-          (do
-            (a/<! (handle-message conn handler msg))
-            (wyd/ack msg)
-            (recur))
-          (a/close! ch)))
-      ch)))
+  (close [_] (a/close! ch)))
 
 (defn server
   "Create a new server instance."
   ([conn] (server conn {}))
-  ([conn options]
-   (Server. conn options)))
-
-(defn listen!
-  [srv queue handler]
-  (-listen srv queue handler))
-
+  ([conn {:keys [queue handler] :as options}]
+   (when-not queue
+     (throw (ex-info "No queue option is provided." {})))
+   (when-not handler
+     (throw (ex-info "No handler option is provided." {})))
+   (let [ss (wyd/consume conn queue)]
+     (a/go-loop []
+       (when-let [msg (a/<! ss)]
+         (a/<! (handle-message conn handler msg))
+         (wyd/ack msg)
+         (recur)))
+     (Server. conn options ss))))
